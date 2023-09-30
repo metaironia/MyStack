@@ -9,10 +9,10 @@
 
 enum StackStatus StackCtor (Stack *stk) {
 
-    (stk -> right_canary) = STACK_CANARY;
+    (stk -> left_canary) = STACK_CANARY;
 
     (stk -> capacity) = STACK_CAPACITY;
-    StackDataCtor ((stk -> data), (stk -> capacity));
+    StackDataCtor (stk);
     (stk -> stack_size) = 0;
 
     (stk -> right_canary) = STACK_CANARY;
@@ -20,19 +20,19 @@ enum StackStatus StackCtor (Stack *stk) {
     return StackStatus::STACK_CTOR_OK;
 }
 
-enum StackStatus StackDataCtor (Elem_t *stack_data, int64_t stack_capacity) {
+enum StackStatus StackDataCtor (Stack *stk) {
 
-    int64_t stack_size_bytes = 2 * INT_MAX_BYTES + stack_capacity * sizeof (Elem_t);
+    int64_t stack_size_bytes = 2 * INT_MAX_BYTES + (stk -> capacity) * sizeof (Elem_t);
 
     if (stack_size_bytes % INT_MAX_BYTES != 0)
         stack_size_bytes += INT_MAX_BYTES - (stack_size_bytes % INT_MAX_BYTES);
 
-    stack_data = (Elem_t *) calloc ((size_t) stack_size_bytes, 1);
+    (stk -> data) = (Elem_t *) calloc ((size_t) stack_size_bytes, 1);
 
-    *(Canary_t *)stack_data = STACK_CANARY;
-    *(Canary_t *)((char *)stack_data + stack_size_bytes - INT_MAX_BYTES) = STACK_CANARY;
+    *(Canary_t *) (stk -> data) = STACK_CANARY;
+    *(Canary_t *) ((char *) (stk -> data) + stack_size_bytes - INT_MAX_BYTES) = STACK_CANARY;
 
-    stack_data = (Elem_t *)((char *) stack_data + INT_MAX_BYTES);
+    (stk -> data) = (Elem_t *) ((char *) (stk -> data) + INT_MAX_BYTES);
 
     return StackStatus::DATA_GENERATION_OK;
 }
@@ -74,8 +74,8 @@ enum StackStatus StackPop (Stack *stk, Elem_t *ret_value) {
 
     StackRecalloc (stk);
 
-    *ret_value = (stk -> data)[(stk -> stack_size)];
-    (stk -> data)[(stk -> stack_size)--] = POISON_NUM;
+    *ret_value = (stk -> data)[--(stk -> stack_size)];
+    (stk -> data)[(stk -> stack_size) + 1] = POISON_NUM;
 
     return StackStatus::STACK_POP_OK;
 }
@@ -93,7 +93,7 @@ enum StackStatus StackRecalloc (Stack *stk) {
     if (new_capacity != 0) {
 
         Elem_t *previous_data = (stk -> data);
-        StackDataCtor ((stk -> data), new_capacity);
+        StackDataCtor (stk);
         memcpy ((stk -> data), previous_data,
                 (size_t) (sizeof (Elem_t) * ((stk -> stack_size) + 1)));
 
@@ -132,3 +132,6 @@ unsigned int StackOk (const Stack *stk) {
 
     return errors_in_stack;
 }
+
+//TODO StackDump (*stk)
+//TODO put everywhere stackok

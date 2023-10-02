@@ -19,9 +19,10 @@ int main (void) {
     StackPop(&test_stack, &stack_last_elem);
 
     printf ("%d\n", stack_last_elem);
-    
+
     StackPop(&test_stack, &stack_last_elem);
 
     printf ("%d\n", stack_last_elem);
+
 }
 

@@ -1,6 +1,24 @@
 #ifndef MY_STACK_FUNC_H
 #define MY_STACK_FUNC_H
 
+
+
+
+
+#define NAME_OF_VAR(x) #x
+
+#define El_format "%d"
+
+#define Can_format "%I64X"
+
+#define STACK_DUMP(stk) StackDump(stk, __FILE__, __func__, __LINE__, NAME_OF_VAR(stk))
+
+#ifdef CANARY_PROTECTION
+    #define CANARY_ON(...) __VA_ARGS__
+#else
+    #define CANARY_ON(...)
+#endif
+
 typedef int Elem_t;
 typedef unsigned long long Canary_t;
 
@@ -41,12 +59,13 @@ enum StackStatus {
     STACK_PUSH_OK,
     STACK_POP_OK,
     SUCCESS_REALLOC,
-    NO_REALLOC_DONE
+    NO_REALLOC_DONE,
+    SUCCESS_STACK_DUMP
 };
 
 enum StackStatus StackCtor (Stack *stk);
 
-enum StackStatus StackDataCtor (Elem_t *stack_data, int64_t stack_capacity);
+enum StackStatus StackDataCtor (Stack *stk);
 
 enum StackStatus StackDtor (Stack *stk);
 
@@ -60,5 +79,8 @@ enum StackStatus StackRecalloc (Stack *stk);
 
 unsigned int StackOk (const Stack *stk);
 
+enum StackStatus StackDump (Stack *stk_for_dump, const char *file,
+                            const char *func_called, const int line_called,
+                            const char *stack_name);
 
 #endif

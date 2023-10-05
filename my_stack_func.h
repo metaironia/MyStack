@@ -1,9 +1,7 @@
 #ifndef MY_STACK_FUNC_H
 #define MY_STACK_FUNC_H
 
-
-
-
+#define CANARY_PROTECTION
 
 #define NAME_OF_VAR(x) #x
 

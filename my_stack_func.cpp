@@ -18,8 +18,7 @@ enum StackFuncStatus StackCtor (Stack *stk, int64_t stack_capacity) {
     (stk -> stack_size) = 1;
     StackDataCtor (stk);
 
-    if (StackOk (stk) != 0)
-        STACK_DUMP (stk);
+    STACK_VERIFY (stk);
 
     return OK;
 }
@@ -40,17 +39,14 @@ enum StackFuncStatus StackDataCtor (Stack *stk) {
 
     CANARY_ON ((stk -> data) = (Elem_t *) ((char *) (stk -> data) + INT_MAX_BYTES));
 
-    if (StackOk (stk) != 0)
-        STACK_DUMP (stk);
-
+    STACK_VERIFY (stk);
 
     return OK;
 }
 
 enum StackFuncStatus StackDtor (Stack *stk) {
 
-    if (StackOk (stk) != 0)
-        STACK_DUMP (stk);
+    STACK_VERIFY (stk);
 
     if (StackDataDtor (stk) == StackFuncStatus::OK) {
 
@@ -65,8 +61,7 @@ enum StackFuncStatus StackDtor (Stack *stk) {
 //TODO data reset
 enum StackFuncStatus StackDataDtor (Stack *stk) {
 
-    if (StackOk (stk) != 0)
-        STACK_DUMP (stk);
+    STACK_VERIFY (stk);
 
     free ((char *)(stk -> data)
                 CANARY_ON (- INT_MAX_BYTES));
@@ -81,8 +76,7 @@ enum StackFuncStatus StackDataDtor (Stack *stk) {
 
 enum StackFuncStatus StackPush (Stack *stk, Elem_t value) {
 
-    if (StackOk (stk) != 0)
-        STACK_DUMP (stk);
+    STACK_VERIFY (stk);
 
     StackRecalloc (stk);
 
@@ -95,8 +89,7 @@ enum StackFuncStatus StackPop (Stack *stk, Elem_t *ret_value) {
 
     assert (ret_value);
 
-    if (StackOk (stk) != 0)
-        STACK_DUMP (stk);
+    STACK_VERIFY (stk);
 
     StackRecalloc (stk);
 
@@ -108,16 +101,15 @@ enum StackFuncStatus StackPop (Stack *stk, Elem_t *ret_value) {
 
 enum StackFuncStatus StackRecalloc (Stack *stk) {
 
-    if (StackOk (stk) != 0)
-        STACK_DUMP (stk);
+    STACK_VERIFY(stk);
 
     int64_t new_capacity = 0;
 
-    if ((stk -> stack_size) + 1 >= (stk -> capacity))
-        new_capacity = (stk -> capacity) * 2; //TODO magic consts
+    if ((stk -> stack_size) >= (stk -> capacity))
+        new_capacity = (stk -> capacity) * HOW_MUCH_STACK_INCREASES; //TODO magic consts
 
-    if ((stk -> stack_size) < (stk -> capacity) / 4)
-        new_capacity = (stk -> capacity) / 4;
+    if ((stk -> stack_size) <= (stk -> capacity) / HOW_MUCH_STACK_DECREASES)
+        new_capacity = (stk -> capacity) / HOW_MUCH_STACK_DECREASES;
 
     if (new_capacity != 0) {
 
@@ -127,7 +119,7 @@ enum StackFuncStatus StackRecalloc (Stack *stk) {
         StackDataCtor (stk);
 
         memcpy ((stk -> data), previous_data,
-                (size_t) (sizeof (Elem_t) * ((stk -> stack_size) + 1)));
+                (size_t) (sizeof (Elem_t) * ((stk -> stack_size))));
 
         return OK;
     }
@@ -162,8 +154,8 @@ unsigned int StackOk (const Stack *stk) {
     if ((stk -> data) == NULL)
         errors_in_stack |= StackErrors::DATA_PTR_NULL;
 
-    if ((stk -> stack_size) < 0)
-        errors_in_stack |= StackErrors::NEGATIVE_SIZE;
+    if ((stk -> stack_size) <= 0)
+        errors_in_stack |= StackErrors::NULL_SIZE;
 
     if ((stk -> capacity) < 0)
         errors_in_stack |= StackErrors::NEGATIVE_CAPACITY;

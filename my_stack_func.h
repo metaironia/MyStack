@@ -11,11 +11,19 @@
 
 #define STACK_DUMP(stk) StackDump(stk, __FILE__, __func__, __LINE__, NAME_OF_VAR(stk))
 
+#define STACK_VERIFY(stk) do {                        \
+                            if (StackOk (stk) != 0) { \
+                                STACK_DUMP (stk);     \
+                                return FAIL;          \
+                            }                         \
+                          } while (0)
+
 #ifdef CANARY_PROTECTION
     #define CANARY_ON(...) __VA_ARGS__
 #else
     #define CANARY_ON(...)
 #endif
+
 
 typedef int Elem_t;
 typedef unsigned long long Canary_t;
@@ -25,6 +33,9 @@ const unsigned long long STACK_CANARY = 0xFEE1DEAD;
 //const unsigned long long DEFAULT_STACK_CAPACITY = 1;
 
 const int INT_MAX_BYTES = 8;
+
+const int HOW_MUCH_STACK_INCREASES = 2;
+const int HOW_MUCH_STACK_DECREASES = 4;
 
 const Elem_t POISON_NUM = 0xDEAD;
 
@@ -44,7 +55,7 @@ enum StackErrors {
     STACK_PTR_NULL       = 1 << 0,
     STACK_CANARY_DAMAGED = 1 << 1,
     DATA_PTR_NULL        = 1 << 2,
-    NEGATIVE_SIZE        = 1 << 3,
+    NULL_SIZE            = 1 << 3,
     NEGATIVE_CAPACITY    = 1 << 4
 };
 

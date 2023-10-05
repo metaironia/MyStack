@@ -7,26 +7,24 @@
 
 #include "my_stack_func.h"
 
-enum StackStatus StackCtor (Stack *stk) {
+FILE *LOG_FILE = fopen ("log.txt", "w");
+
+enum StackFuncStatus StackCtor (Stack *stk, int64_t stack_capacity) {
 
     CANARY_ON ((stk -> left_canary) = STACK_CANARY);
-
-    (stk -> capacity) = STACK_CAPACITY;
-    StackDataCtor (stk);
-    (stk -> stack_size) = 0;
-
     CANARY_ON ((stk -> right_canary) = STACK_CANARY);
 
+    (stk -> capacity) = stack_capacity;
+    (stk -> stack_size) = 1;
+    StackDataCtor (stk);
+
     if (StackOk (stk) != 0)
         STACK_DUMP (stk);
 
-    return StackStatus::STACK_CTOR_OK;
+    return OK;
 }
 
-enum StackStatus StackDataCtor (Stack *stk) {
-
-    if (StackOk (stk) != 0)
-        STACK_DUMP (stk);
+enum StackFuncStatus StackDataCtor (Stack *stk) {
 
     int64_t stack_size_bytes = CANARY_ON (2 * INT_MAX_BYTES +)
                                     (stk -> capacity) * sizeof (Elem_t);
@@ -42,26 +40,30 @@ enum StackStatus StackDataCtor (Stack *stk) {
 
     CANARY_ON ((stk -> data) = (Elem_t *) ((char *) (stk -> data) + INT_MAX_BYTES));
 
-    return StackStatus::DATA_GENERATION_OK;
+    if (StackOk (stk) != 0)
+        STACK_DUMP (stk);
+
+
+    return OK;
 }
 
-enum StackStatus StackDtor (Stack *stk) {
+enum StackFuncStatus StackDtor (Stack *stk) {
 
     if (StackOk (stk) != 0)
         STACK_DUMP (stk);
 
-    if (StackDataDtor (stk) == StackStatus::DATA_DESTRUCT_OK) {
+    if (StackDataDtor (stk) == StackFuncStatus::OK) {
 
         free (stk);
         stk = NULL;
 
-        return StackStatus::STACK_DESTRUCT_OK;
+        return OK;
     }
 
-    return StackStatus::STACK_DESTRUCT_FAILED;
+    return FAIL;
 }
-
-enum StackStatus StackDataDtor (Stack *stk) {
+//TODO data reset
+enum StackFuncStatus StackDataDtor (Stack *stk) {
 
     if (StackOk (stk) != 0)
         STACK_DUMP (stk);
@@ -72,12 +74,12 @@ enum StackStatus StackDataDtor (Stack *stk) {
     (stk -> data) = NULL;
 
     if (!(stk -> data))
-        return StackStatus::DATA_DESTRUCT_OK;
+        return OK;
 
-    return StackStatus::DATA_DESTRUCT_FAILED;
+    return FAIL;
 }
 
-enum StackStatus StackPush (Stack *stk, Elem_t value) {
+enum StackFuncStatus StackPush (Stack *stk, Elem_t value) {
 
     if (StackOk (stk) != 0)
         STACK_DUMP (stk);
@@ -86,10 +88,12 @@ enum StackStatus StackPush (Stack *stk, Elem_t value) {
 
     (stk -> data)[(stk -> stack_size)++] = value;
 
-    return StackStatus::STACK_PUSH_OK;
+    return OK;
 }
 
-enum StackStatus StackPop (Stack *stk, Elem_t *ret_value) {
+enum StackFuncStatus StackPop (Stack *stk, Elem_t *ret_value) {
+
+    assert (ret_value);
 
     if (StackOk (stk) != 0)
         STACK_DUMP (stk);
@@ -99,10 +103,10 @@ enum StackStatus StackPop (Stack *stk, Elem_t *ret_value) {
     *ret_value = (stk -> data)[--(stk -> stack_size)];
     (stk -> data)[(stk -> stack_size) + 1] = POISON_NUM;
 
-    return StackStatus::STACK_POP_OK;
+    return OK;
 }
 
-enum StackStatus StackRecalloc (Stack *stk) {
+enum StackFuncStatus StackRecalloc (Stack *stk) {
 
     if (StackOk (stk) != 0)
         STACK_DUMP (stk);
@@ -110,7 +114,7 @@ enum StackStatus StackRecalloc (Stack *stk) {
     int64_t new_capacity = 0;
 
     if ((stk -> stack_size) + 1 >= (stk -> capacity))
-        new_capacity = (stk -> capacity) * 2;
+        new_capacity = (stk -> capacity) * 2; //TODO magic consts
 
     if ((stk -> stack_size) < (stk -> capacity) / 4)
         new_capacity = (stk -> capacity) / 4;
@@ -125,10 +129,10 @@ enum StackStatus StackRecalloc (Stack *stk) {
         memcpy ((stk -> data), previous_data,
                 (size_t) (sizeof (Elem_t) * ((stk -> stack_size) + 1)));
 
-        return StackStatus::SUCCESS_REALLOC;
+        return OK;
     }
 
-    return StackStatus::NO_REALLOC_DONE;
+    return NOTHING_DONE;
 }
 
 unsigned int StackOk (const Stack *stk) {
@@ -155,7 +159,7 @@ unsigned int StackOk (const Stack *stk) {
         errors_in_stack |= StackErrors::STACK_CANARY_DAMAGED;
     );
 
-    if ((stk -> data))
+    if ((stk -> data) == NULL)
         errors_in_stack |= StackErrors::DATA_PTR_NULL;
 
     if ((stk -> stack_size) < 0)
@@ -166,19 +170,15 @@ unsigned int StackOk (const Stack *stk) {
 
     if (errors_in_stack != 0) {
 
-        FILE *log = fopen ("log.txt", "w");
-        fprintf (log, "Error %u occurred. \n", errors_in_stack);
-        fclose (log);
+        fprintf (LOG_FILE, "Error %d occurred. \n", errors_in_stack);
     }
 
     return errors_in_stack;
 }
 
-enum StackStatus StackDump (Stack *stk_for_dump, const char *file_called,
+enum StackFuncStatus StackDump (Stack *stk_for_dump, const char *file_called,
                             const char *func_called, const int line_called,
                             const char *stack_name) {
-
-    FILE *log = fopen ("log.txt", "a");
 
     CANARY_ON (
 
@@ -188,15 +188,15 @@ enum StackStatus StackDump (Stack *stk_for_dump, const char *file_called,
         stack_size_bytes += INT_MAX_BYTES - (stack_size_bytes % INT_MAX_BYTES);
     )
 
-    fprintf (log,         "Stack [0x%p] \"%s\" from %s(%d) %s() \n"
+    fprintf (LOG_FILE,         "Stack [0x%p] \"%s\" from %s(%d) %s() \n"
                           "    { \n"
-               CANARY_ON ("    right canary = 0x" Can_format "\n")
-               CANARY_ON ("    left canary = 0x" Can_format  "\n")
+               CANARY_ON ("    left canary = 0x" CAN_FORMAT "\n")
+               CANARY_ON ("    right canary = 0x" CAN_FORMAT  "\n")
                           "    size = %I64d \n"
                           "    capacity = %I64d \n"
                           "    data [0x%p] \n"
                           "        { \n"
-               CANARY_ON ("        left data canary = 0x" Can_format "\n"),
+               CANARY_ON ("        left data canary = 0x" CAN_FORMAT "\n"),
                           stk_for_dump, stack_name,
                           file_called, line_called, func_called,
                CANARY_ON ((stk_for_dump -> left_canary), (stk_for_dump -> right_canary),)
@@ -208,21 +208,24 @@ enum StackStatus StackDump (Stack *stk_for_dump, const char *file_called,
     for (int i = 0; i < (stk_for_dump -> capacity); i++) {
 
         if ((stk_for_dump -> data[i]) != POISON_NUM)
-            fprintf (log, "        *[%d] = " El_format "\n", i, (stk_for_dump -> data[i]));
+            fprintf (LOG_FILE, "        *[%d] = " EL_FORMAT "\n", i, (stk_for_dump -> data[i]));
         else
-            fprintf (log, "        *[%d] = POISON_NUM \n", i);
+            fprintf (LOG_FILE, "        *[%d] = POISON_NUM \n", i);
 
     }
 
-    fprintf (log,
-               CANARY_ON ("        right data canary = 0x" Can_format "\n")
+    fprintf (LOG_FILE,
+               CANARY_ON ("        right data canary = 0x" CAN_FORMAT "\n")
                           "        } \n"
                           "    }     \n"
                CANARY_ON (, *(Canary_t *)((char *)(stk_for_dump -> data) +
                           stack_size_bytes - INT_MAX_BYTES)));
 
-    fclose (log);
-    abort();
-    return StackStatus::SUCCESS_STACK_DUMP;
+    return OK;
+}
+
+void LogFileClose (void) {
+
+    fclose (LOG_FILE);
 }
 

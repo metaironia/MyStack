@@ -10,7 +10,7 @@ int main (void) {
 
     Stack test_stack = {};
 
-    StackCtor (&test_stack);
+    StackCtor (&test_stack, 1);
     StackPush (&test_stack, 1);
     StackPush (&test_stack, 20);
 
@@ -24,5 +24,6 @@ int main (void) {
 
     printf ("%d\n", stack_last_elem);
 
+    atexit(LogFileClose);
 }
 

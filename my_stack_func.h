@@ -5,9 +5,9 @@
 
 #define NAME_OF_VAR(x) #x
 
-#define El_format "%d"
+#define EL_FORMAT "%d"
 
-#define Can_format "%I64X"
+#define CAN_FORMAT "%I64X"
 
 #define STACK_DUMP(stk) StackDump(stk, __FILE__, __func__, __LINE__, NAME_OF_VAR(stk))
 
@@ -22,11 +22,13 @@ typedef unsigned long long Canary_t;
 
 const unsigned long long STACK_CANARY = 0xFEE1DEAD;
 
-const unsigned long long STACK_CAPACITY = 1;
+//const unsigned long long DEFAULT_STACK_CAPACITY = 1;
 
 const int INT_MAX_BYTES = 8;
 
 const Elem_t POISON_NUM = 0xDEAD;
+
+extern FILE *LOG_FILE;
 
 struct Stack {
 
@@ -46,38 +48,32 @@ enum StackErrors {
     NEGATIVE_CAPACITY    = 1 << 4
 };
 
-enum StackStatus {
+enum StackFuncStatus {
 
-    STACK_CTOR_OK,
-    DATA_GENERATION_OK,
-    STACK_DESTRUCT_OK,
-    STACK_DESTRUCT_FAILED,
-    DATA_DESTRUCT_OK,
-    DATA_DESTRUCT_FAILED,
-    STACK_PUSH_OK,
-    STACK_POP_OK,
-    SUCCESS_REALLOC,
-    NO_REALLOC_DONE,
-    SUCCESS_STACK_DUMP
+    OK,
+    FAIL,
+    NOTHING_DONE
 };
 
-enum StackStatus StackCtor (Stack *stk);
+void LogFileClose (void);
 
-enum StackStatus StackDataCtor (Stack *stk);
+enum StackFuncStatus StackCtor (Stack *stk, int64_t stack_capacity);
 
-enum StackStatus StackDtor (Stack *stk);
+enum StackFuncStatus StackDataCtor (Stack *stk);
 
-enum StackStatus StackDataDtor (Stack *stk);
+enum StackFuncStatus StackDtor (Stack *stk);
 
-enum StackStatus StackPush (Stack *stk, Elem_t value);
+enum StackFuncStatus StackDataDtor (Stack *stk);
 
-enum StackStatus StackPop (Stack *stk, Elem_t *ret_value);
+enum StackFuncStatus StackPush (Stack *stk, Elem_t value);
 
-enum StackStatus StackRecalloc (Stack *stk);
+enum StackFuncStatus StackPop (Stack *stk, Elem_t *ret_value);
+
+enum StackFuncStatus StackRecalloc (Stack *stk);
 
 unsigned int StackOk (const Stack *stk);
 
-enum StackStatus StackDump (Stack *stk_for_dump, const char *file,
+enum StackFuncStatus StackDump (Stack *stk_for_dump, const char *file,
                             const char *func_called, const int line_called,
                             const char *stack_name);
 

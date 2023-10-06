@@ -6,10 +6,6 @@
 
 #define NAME_OF_VAR(x) #x
 
-#define EL_FORMAT "%d"
-
-#define CAN_FORMAT "%I64X"
-
 #define STACK_DUMP(stk) StackDump(stk, __FILE__, __func__, __LINE__, NAME_OF_VAR(stk))
 
 #define STACK_VERIFY(stk) do {                        \
@@ -31,9 +27,6 @@
     #define ON_DEBUG(...)
 #endif
 
-typedef int Elem_t;
-typedef unsigned long long Canary_t;
-
 const unsigned long long STACK_CANARY = 0xFEE1DEAD;
 
 //const unsigned long long DEFAULT_STACK_CAPACITY = 1;
@@ -52,6 +45,7 @@ struct Stack {
     Elem_t *data;
     int64_t capacity;
     int64_t stack_size;
+    int64_t stack_hash;
     Canary_t right_canary;
 };
 

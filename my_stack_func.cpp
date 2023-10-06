@@ -11,7 +11,7 @@ FILE *LOG_FILE = fopen ("log.txt", "w");
 
 enum StackFuncStatus StackCtor (Stack *stk, int64_t stack_capacity) {
 
-    //CANARY_ON ((stk -> left_canary) = STACK_CANARY);
+    CANARY_ON ((stk -> left_canary) = STACK_CANARY);
     CANARY_ON ((stk -> right_canary) = STACK_CANARY);
 
     (stk -> capacity) = stack_capacity;

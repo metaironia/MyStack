@@ -1,8 +1,8 @@
 #ifndef MY_STACK_FUNC_H
 #define MY_STACK_FUNC_H
 
-#define CANARY_PROTECTION
-#define DEBUG
+#include "extern_for_stack.h"
+#include "my_stack_func_additional.h"
 
 #define NAME_OF_VAR(x) #x
 
@@ -19,13 +19,13 @@
                             }                         \
                           } while (0)
 
-#ifdef CANARY_PROTECTION
+#if CANARY_PROTECTION
     #define CANARY_ON(...) __VA_ARGS__
 #else
     #define CANARY_ON(...)
 #endif
 
-#ifdef DEBUG
+#if DEBUG
     #define ON_DEBUG(...) __VA_ARGS__
 #else
     #define ON_DEBUG(...)
@@ -45,8 +45,6 @@ const int HOW_MUCH_STACK_DECREASES = 4;
 const int DECREASE_AMOUNT = 2;
 
 const Elem_t POISON_NUM = 0xDEAD;
-
-extern FILE *LOG_FILE;
 
 struct Stack {
 
@@ -74,8 +72,6 @@ enum StackFuncStatus {
     FAIL,
     NOTHING_DONE
 };
-
-void LogFileClose (void);
 
 enum StackFuncStatus StackCtor (Stack *stk, int64_t stack_capacity);
 

@@ -15,31 +15,37 @@ enum StackFuncStatus StackCtor (Stack *stk, int64_t stack_capacity) {
     CANARY_ON ((stk -> right_canary) = STACK_CANARY);
 
     (stk -> capacity) = stack_capacity;
-    (stk -> stack_size) = 1;
+    (stk -> stack_size) = 0;
     StackDataCtor (stk);
 
     STACK_VERIFY (stk);
+
+    ON_DEBUG (STACK_DUMP (stk));
 
     return OK;
 }
 
 enum StackFuncStatus StackDataCtor (Stack *stk) {
 
-    int64_t stack_size_bytes = CANARY_ON (2 * INT_MAX_BYTES +)
+    int64_t stack_size_bytes = CANARY_ON (2 * MAX_CANARY_SIZE_BYTES +)
                                     (stk -> capacity) * sizeof (Elem_t);
 
-    CANARY_ON (if (stack_size_bytes % INT_MAX_BYTES != 0)
-                   stack_size_bytes += INT_MAX_BYTES - (stack_size_bytes % INT_MAX_BYTES));
+    CANARY_ON (if (stack_size_bytes % MAX_CANARY_SIZE_BYTES != 0)
+                   stack_size_bytes += MAX_CANARY_SIZE_BYTES - (stack_size_bytes % MAX_CANARY_SIZE_BYTES));
 
     (stk -> data) = (Elem_t *) calloc ((size_t) stack_size_bytes, 1);
 
     CANARY_ON (*(Canary_t *) (stk -> data) = STACK_CANARY);
-    CANARY_ON (*(Canary_t *) ((char *) (stk -> data) + stack_size_bytes - INT_MAX_BYTES) =
+    CANARY_ON (*(Canary_t *) ((char *) (stk -> data) + stack_size_bytes - MAX_CANARY_SIZE_BYTES) =
                                                                                 STACK_CANARY);
 
-    CANARY_ON ((stk -> data) = (Elem_t *) ((char *) (stk -> data) + INT_MAX_BYTES));
+    CANARY_ON ((stk -> data) = (Elem_t *) ((char *) (stk -> data) + MAX_CANARY_SIZE_BYTES));
+
+    StackDataReset (stk);
 
     STACK_VERIFY (stk);
+
+    ON_DEBUG (STACK_DUMP (stk));
 
     return OK;
 }
@@ -48,30 +54,46 @@ enum StackFuncStatus StackDtor (Stack *stk) {
 
     STACK_VERIFY (stk);
 
-    if (StackDataDtor (stk) == StackFuncStatus::OK) {
+    if (StackDataDtor (stk) != StackFuncStatus::OK)
+        return FAIL;
 
-        free (stk);
-        stk = NULL;
+    free (stk);
+    stk = NULL;
 
-        return OK;
-    }
+    ON_DEBUG (STACK_DUMP (stk));
 
-    return FAIL;
+    return OK;
 }
-//TODO data reset
+
+enum StackFuncStatus StackDataReset (Stack *stk) {
+
+    STACK_VERIFY (stk);
+
+    for (int64_t index = 0; index < (stk -> capacity); index++)
+        (stk -> data)[index] = POISON_NUM;
+
+    ON_DEBUG (STACK_DUMP (stk));
+
+    return OK;
+}
+
 enum StackFuncStatus StackDataDtor (Stack *stk) {
 
     STACK_VERIFY (stk);
 
+    StackDataReset (stk);
+
     free ((char *)(stk -> data)
-                CANARY_ON (- INT_MAX_BYTES));
+                CANARY_ON (- MAX_CANARY_SIZE_BYTES));
 
     (stk -> data) = NULL;
 
-    if (!(stk -> data))
-        return OK;
+    if (stk -> data)
+        return FAIL;
 
-    return FAIL;
+    ON_DEBUG (STACK_DUMP (stk));
+
+    return OK;
 }
 
 enum StackFuncStatus StackPush (Stack *stk, Elem_t value) {
@@ -82,6 +104,8 @@ enum StackFuncStatus StackPush (Stack *stk, Elem_t value) {
 
     (stk -> data)[(stk -> stack_size)++] = value;
 
+    ON_DEBUG (STACK_DUMP (stk));
+
     return OK;
 }
 
@@ -91,10 +115,15 @@ enum StackFuncStatus StackPop (Stack *stk, Elem_t *ret_value) {
 
     STACK_VERIFY (stk);
 
+    if ((stk -> data)[(stk -> stack_size) - 1] < 0)
+        return FAIL;                                             //TODO output
+
     StackRecalloc (stk);
 
-    *ret_value = (stk -> data)[--(stk -> stack_size)];
-    (stk -> data)[(stk -> stack_size) + 1] = POISON_NUM;
+    *ret_value = (stk -> data)[(stk -> stack_size) - 1];
+    (stk -> data)[--(stk -> stack_size)] = POISON_NUM;
+
+    ON_DEBUG (STACK_DUMP (stk));
 
     return OK;
 }
@@ -106,10 +135,10 @@ enum StackFuncStatus StackRecalloc (Stack *stk) {
     int64_t new_capacity = 0;
 
     if ((stk -> stack_size) >= (stk -> capacity))
-        new_capacity = (stk -> capacity) * HOW_MUCH_STACK_INCREASES; //TODO magic consts
+        new_capacity = (stk -> capacity) * INCREASE_AMOUNT;
 
     if ((stk -> stack_size) <= (stk -> capacity) / HOW_MUCH_STACK_DECREASES)
-        new_capacity = (stk -> capacity) / HOW_MUCH_STACK_DECREASES;
+        new_capacity = (stk -> capacity) / DECREASE_AMOUNT;
 
     if (new_capacity != 0) {
 
@@ -121,8 +150,14 @@ enum StackFuncStatus StackRecalloc (Stack *stk) {
         memcpy ((stk -> data), previous_data,
                 (size_t) (sizeof (Elem_t) * ((stk -> stack_size))));
 
+        free (previous_data);
+
+        ON_DEBUG (STACK_DUMP (stk));
+
         return OK;
     }
+
+    ON_DEBUG (STACK_DUMP (stk));
 
     return NOTHING_DONE;
 }
@@ -131,10 +166,10 @@ unsigned int StackOk (const Stack *stk) {
 
     CANARY_ON (
 
-    int64_t stack_size_bytes = INT_MAX_BYTES + (stk -> capacity) * sizeof (Elem_t);
+    int64_t stack_size_bytes = MAX_CANARY_SIZE_BYTES + (stk -> capacity) * sizeof (Elem_t);
 
-    if (stack_size_bytes % INT_MAX_BYTES != 0)
-        stack_size_bytes += INT_MAX_BYTES - (stack_size_bytes % INT_MAX_BYTES);
+    if (stack_size_bytes % MAX_CANARY_SIZE_BYTES != 0)
+        stack_size_bytes += MAX_CANARY_SIZE_BYTES - (stack_size_bytes % MAX_CANARY_SIZE_BYTES);
     )
 
     unsigned int errors_in_stack = 0;
@@ -145,8 +180,8 @@ unsigned int StackOk (const Stack *stk) {
     CANARY_ON (
 
     if ((stk -> right_canary) != STACK_CANARY || (stk -> left_canary) != STACK_CANARY ||
-        *(Canary_t *)((char *)(stk -> data) - INT_MAX_BYTES) != STACK_CANARY ||
-        *(Canary_t *)((char *)(stk -> data) + stack_size_bytes - INT_MAX_BYTES) != STACK_CANARY)
+        *(Canary_t *)((char *)(stk -> data) - MAX_CANARY_SIZE_BYTES) != STACK_CANARY ||
+        *(Canary_t *)((char *)(stk -> data) + stack_size_bytes - MAX_CANARY_SIZE_BYTES) != STACK_CANARY)
 
         errors_in_stack |= StackErrors::STACK_CANARY_DAMAGED;
     );
@@ -154,8 +189,8 @@ unsigned int StackOk (const Stack *stk) {
     if ((stk -> data) == NULL)
         errors_in_stack |= StackErrors::DATA_PTR_NULL;
 
-    if ((stk -> stack_size) <= 0)
-        errors_in_stack |= StackErrors::NULL_SIZE;
+    if ((stk -> stack_size) < 0)
+        errors_in_stack |= StackErrors::NEGATIVE_SIZE;
 
     if ((stk -> capacity) < 0)
         errors_in_stack |= StackErrors::NEGATIVE_CAPACITY;
@@ -174,10 +209,10 @@ enum StackFuncStatus StackDump (Stack *stk_for_dump, const char *file_called,
 
     CANARY_ON (
 
-    int64_t stack_size_bytes = INT_MAX_BYTES + (stk_for_dump -> capacity) * sizeof (Elem_t);
+    int64_t stack_size_bytes = MAX_CANARY_SIZE_BYTES + (stk_for_dump -> capacity) * sizeof (Elem_t);
 
-    if (stack_size_bytes % INT_MAX_BYTES != 0)
-        stack_size_bytes += INT_MAX_BYTES - (stack_size_bytes % INT_MAX_BYTES);
+    if (stack_size_bytes % MAX_CANARY_SIZE_BYTES != 0)
+        stack_size_bytes += MAX_CANARY_SIZE_BYTES - (stack_size_bytes % MAX_CANARY_SIZE_BYTES);
     )
 
     fprintf (LOG_FILE,         "Stack [0x%p] \"%s\" from %s(%d) %s() \n"
@@ -195,7 +230,7 @@ enum StackFuncStatus StackDump (Stack *stk_for_dump, const char *file_called,
                           (long long int) (stk_for_dump -> stack_size),
                           (long long int) (stk_for_dump -> capacity),
                           (stk_for_dump -> data)
-               CANARY_ON  (, *(Canary_t *)((char *)(stk_for_dump -> data) - INT_MAX_BYTES)));
+               CANARY_ON  (, *(Canary_t *)((char *)(stk_for_dump -> data) - MAX_CANARY_SIZE_BYTES)));
 
     for (int i = 0; i < (stk_for_dump -> capacity); i++) {
 
@@ -211,7 +246,7 @@ enum StackFuncStatus StackDump (Stack *stk_for_dump, const char *file_called,
                           "        } \n"
                           "    }     \n"
                CANARY_ON (, *(Canary_t *)((char *)(stk_for_dump -> data) +
-                          stack_size_bytes - INT_MAX_BYTES)));
+                          stack_size_bytes - MAX_CANARY_SIZE_BYTES)));
 
     return OK;
 }

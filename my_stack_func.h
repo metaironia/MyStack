@@ -2,6 +2,7 @@
 #define MY_STACK_FUNC_H
 
 #define CANARY_PROTECTION
+#define DEBUG
 
 #define NAME_OF_VAR(x) #x
 
@@ -24,6 +25,11 @@
     #define CANARY_ON(...)
 #endif
 
+#ifdef DEBUG
+    #define ON_DEBUG(...) __VA_ARGS__
+#else
+    #define ON_DEBUG(...)
+#endif
 
 typedef int Elem_t;
 typedef unsigned long long Canary_t;
@@ -32,10 +38,11 @@ const unsigned long long STACK_CANARY = 0xFEE1DEAD;
 
 //const unsigned long long DEFAULT_STACK_CAPACITY = 1;
 
-const int INT_MAX_BYTES = 8;
+const int MAX_CANARY_SIZE_BYTES = 8;
 
-const int HOW_MUCH_STACK_INCREASES = 2;
+const int INCREASE_AMOUNT = 2;
 const int HOW_MUCH_STACK_DECREASES = 4;
+const int DECREASE_AMOUNT = 2;
 
 const Elem_t POISON_NUM = 0xDEAD;
 
@@ -55,7 +62,7 @@ enum StackErrors {
     STACK_PTR_NULL       = 1 << 0,
     STACK_CANARY_DAMAGED = 1 << 1,
     DATA_PTR_NULL        = 1 << 2,
-    NULL_SIZE            = 1 << 3,
+    NEGATIVE_SIZE        = 1 << 3,
     NEGATIVE_CAPACITY    = 1 << 4
 };
 
@@ -70,9 +77,11 @@ void LogFileClose (void);
 
 enum StackFuncStatus StackCtor (Stack *stk, int64_t stack_capacity);
 
+enum StackFuncStatus StackDtor (Stack *stk);
+
 enum StackFuncStatus StackDataCtor (Stack *stk);
 
-enum StackFuncStatus StackDtor (Stack *stk);
+enum StackFuncStatus StackDataReset (Stack *stk);
 
 enum StackFuncStatus StackDataDtor (Stack *stk);
 

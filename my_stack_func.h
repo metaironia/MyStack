@@ -3,6 +3,7 @@
 
 #include "extern_for_stack.h"
 #include "my_stack_func_additional.h"
+#include "hash_func.h"
 
 #define NAME_OF_VAR(x) #x
 
@@ -19,6 +20,12 @@
     #define CANARY_ON(...) __VA_ARGS__
 #else
     #define CANARY_ON(...)
+#endif
+
+#if HASH_PROTECTION
+    #define HASH_ON(...) __VA_ARGS__
+#else
+    #define HASH_ON(...)
 #endif
 
 #if DEBUG
@@ -43,21 +50,23 @@ struct Stack {
 
     Canary_t left_canary;
     Elem_t *data;
-    int64_t capacity;
-    int64_t stack_size;
-    int64_t stack_hash;
+    int32_t capacity;
+    int32_t stack_size;
+    uint32_t stack_hash;
+    uint32_t stack_data_hash;
     Canary_t right_canary;
 };
 
-const int STACK_ERRORS_AMOUNT = 5;
+const int STACK_ERRORS_AMOUNT = 6;
 
 enum StackErrors {
 
     STACK_PTR_NULL       = 1 << 0,
-    STACK_CANARY_DAMAGED = 1 << 1,
-    DATA_PTR_NULL        = 1 << 2,
-    NEGATIVE_SIZE        = 1 << 3,
-    NEGATIVE_CAPACITY    = 1 << 4
+    WRONG_HASH           = 1 << 1,
+    STACK_CANARY_DAMAGED = 1 << 2,
+    DATA_PTR_NULL        = 1 << 3,
+    NEGATIVE_SIZE        = 1 << 4,
+    NEGATIVE_CAPACITY    = 1 << 5,
 };
 
 enum StackFuncStatus {
@@ -67,7 +76,7 @@ enum StackFuncStatus {
     NOTHING_DONE
 };
 
-enum StackFuncStatus StackCtor (Stack *stk, int64_t stack_capacity);
+enum StackFuncStatus StackCtor (Stack *stk, int32_t stack_capacity);
 
 enum StackFuncStatus StackDtor (Stack *stk);
 
@@ -83,10 +92,14 @@ enum StackFuncStatus StackPop (Stack *stk, Elem_t *ret_value);
 
 enum StackFuncStatus StackRecalloc (Stack *stk);
 
-unsigned int StackOk (const Stack *stk);
+unsigned int StackOk (Stack *stk);
 
 enum StackFuncStatus StackDump (Stack *stk_for_dump, const char *file,
                             const char *func_called, const int line_called,
                             const char *stack_name);
+
+enum StackFuncStatus StackHashGen (Stack *stk_for_hash);
+
+enum StackFuncStatus StackDataHashGen (Stack *stk_for_hash);
 
 #endif

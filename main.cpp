@@ -17,12 +17,9 @@ int main (void) {
     Elem_t stack_last_elem = POISON_NUM;
 
     StackPop(&test_stack, &stack_last_elem);
-
-    printf ("%d\n", stack_last_elem);
-
     StackPop(&test_stack, &stack_last_elem);
-
-    printf ("%d\n", stack_last_elem);
+    StackPop(&test_stack, &stack_last_elem);
+    StackPop(&test_stack, &stack_last_elem);
 
     atexit(LogFileClose);
 }

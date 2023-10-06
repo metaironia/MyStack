@@ -57,6 +57,8 @@ struct Stack {
     Canary_t right_canary;
 };
 
+const int STACK_ERRORS_AMOUNT = 5;
+
 enum StackErrors {
 
     STACK_PTR_NULL       = 1 << 0,

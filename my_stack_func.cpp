@@ -11,7 +11,7 @@ FILE *LOG_FILE = fopen ("log.txt", "w");
 
 enum StackFuncStatus StackCtor (Stack *stk, int64_t stack_capacity) {
 
-    CANARY_ON ((stk -> left_canary) = STACK_CANARY);
+    //CANARY_ON ((stk -> left_canary) = STACK_CANARY);
     CANARY_ON ((stk -> right_canary) = STACK_CANARY);
 
     (stk -> capacity) = stack_capacity;
@@ -115,8 +115,12 @@ enum StackFuncStatus StackPop (Stack *stk, Elem_t *ret_value) {
 
     STACK_VERIFY (stk);
 
-    if ((stk -> data)[(stk -> stack_size) - 1] < 0)
-        return FAIL;                                             //TODO output
+    if (((stk -> stack_size) - 1) < 0) {
+
+        fprintf (LOG_FILE, "Cannot do StackPop().\n");
+        STACK_DUMP (stk);
+        return FAIL;
+    }
 
     StackRecalloc (stk);
 
@@ -197,7 +201,16 @@ unsigned int StackOk (const Stack *stk) {
 
     if (errors_in_stack != 0) {
 
-        fprintf (LOG_FILE, "Error %d occurred. \n", errors_in_stack);
+        fprintf (LOG_FILE, "Error ");
+
+        for (int curr_err_num = STACK_ERRORS_AMOUNT - 1, curr_err_status = 0; curr_err_num >= 0; curr_err_num--) {
+
+            curr_err_status = (((1 << curr_err_num) & errors_in_stack) == 0) ? 0 : 1;
+
+            fprintf (LOG_FILE, "%d", curr_err_status);
+        }
+
+        fprintf (LOG_FILE, " occurred. \n");
     }
 
     return errors_in_stack;
@@ -245,6 +258,7 @@ enum StackFuncStatus StackDump (Stack *stk_for_dump, const char *file_called,
                CANARY_ON ("        right data canary = 0x" CAN_FORMAT "\n")
                           "        } \n"
                           "    }     \n"
+                          "          \n"
                CANARY_ON (, *(Canary_t *)((char *)(stk_for_dump -> data) +
                           stack_size_bytes - MAX_CANARY_SIZE_BYTES)));
 

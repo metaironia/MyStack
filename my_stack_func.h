@@ -13,18 +13,18 @@
                                   } while (0)
 
 /// Macros that outputs name of variable.
-#define NAME_OF_VAR(x) #x
+#define NAME_OF_VAR(x)     #x
 
 /// Macros that run StackDump() function.
-#define STACK_DUMP(stk) StackDump(stk, __FILE__, __func__, __LINE__, NAME_OF_VAR(stk))
+#define STACK_DUMP(stk)    StackDump (stk, __FILE__, __func__, __LINE__, NAME_OF_VAR (stk))
 
 /// Macros that verify the stack.
-#define STACK_VERIFY(stk) do {                          \
-                              if (StackOk (stk) != 0) { \
-                                  STACK_DUMP (stk);     \
-                                  return FAIL;          \
-                              }                         \
-                          } while (0)
+#define STACK_VERIFY(stk)  do {                          \
+                               if (StackOk (stk) != 0) { \
+                                   STACK_DUMP (stk);     \
+                                   return FAIL;          \
+                               }                         \
+                           } while (0)
 
 /// Checks whether canary protection is on or not.
 #if CANARY_PROTECTION
@@ -71,11 +71,14 @@ const Elem_t POISON_NUM = 0xDEAD;
 struct Stack {
 
     Canary_t left_canary;
+
     Elem_t *data;
     int32_t capacity;
     int32_t stack_size;
+
     uint32_t stack_hash;
     uint32_t stack_data_hash;
+
     Canary_t right_canary;
 };
 
@@ -85,12 +88,12 @@ const int STACK_ERRORS_AMOUNT = 6;
 /// Enum that contains all stack errors.
 enum StackErrors {
 
-    STACK_PTR_NULL       = 1 << 0,   ///< Error describes null pointer to stack.
-    WRONG_HASH           = 1 << 1,   ///< Error describes wrong stack hash or wrong hash of elements in data
-    STACK_CANARY_DAMAGED = 1 << 2,
-    DATA_PTR_NULL        = 1 << 3,   ///< Error describes null pointer to data.
-    NEGATIVE_SIZE        = 1 << 4,   ///< Error describes negative stack size.
-    NEGATIVE_CAPACITY    = 1 << 5,   ///< Error describes negative stack capacity.
+    STACK_PTR_NULL       = (1 << 0),   ///< Error describes null pointer to stack.
+    WRONG_HASH           = (1 << 1),   ///< Error describes wrong stack hash or wrong hash of elements in data
+    STACK_CANARY_DAMAGED = (1 << 2),
+    DATA_PTR_NULL        = (1 << 3),   ///< Error describes null pointer to data.
+    NEGATIVE_SIZE        = (1 << 4),   ///< Error describes negative stack size.
+    NEGATIVE_CAPACITY    = (1 << 5),   ///< Error describes negative stack capacity.
 };
 
 /// Enum that contains stack function statuses.
@@ -99,7 +102,14 @@ enum StackFuncStatus {
     OK,                              ///< If function was run successfully.
     FAIL,                            ///< If error happened while function was running.
     NOTHING_HAPPENED                 /**< If stack capacity wasn't changed in StackRecalloc().
-                                         Special status for StackRecalloc(). */
+                                          Data wasn't changed in stack. Stack wasn't changed.
+                                          Nothing wasn't changed at all. No function was called.
+                                          No instruction was executed. The Sun wasn't moved in the sky.
+                                          Nobody was moved or even breathed, no spirit was going
+                                          under empty Earth. The God was not even created or started
+                                          the Creature of the Universe. And was not the Light,
+                                          and was not the Dark: was not the Day One. NOTHING HAPPENED.
+                                          Special status for StackRecalloc(). */
 };
 
 /**
@@ -198,5 +208,7 @@ enum StackFuncStatus StackDataHashGen (Stack *stk_for_hash);
     @return \p OK if was done successfully.
 */
 enum StackFuncStatus LogPrintStackError (unsigned int errnum);
+
+FILE *LogFileOpen (const char *file);
 
 #endif

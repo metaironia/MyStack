@@ -8,8 +8,6 @@
 
 int main (void) {
 
-    atexit(LogFileClose);
-
     Stack test_stack = {};
 
     StackCtor (&test_stack, 1);
@@ -22,5 +20,8 @@ int main (void) {
     StackPop(&test_stack, &stack_last_elem);
     StackPop(&test_stack, &stack_last_elem);
     StackPop(&test_stack, &stack_last_elem);
+
+    StackDtor (&test_stack);
+
 }
 

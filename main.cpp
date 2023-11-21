@@ -16,12 +16,17 @@ int main (void) {
 
     Elem_t stack_last_elem = POISON_NUM;
 
-    StackPop(&test_stack, &stack_last_elem);
-    StackPop(&test_stack, &stack_last_elem);
-    StackPop(&test_stack, &stack_last_elem);
-    StackPop(&test_stack, &stack_last_elem);
+    stack_last_elem = StackPop (&test_stack);
 
+    printf ("last elem = " EL_FORMAT "\n", stack_last_elem);
+    stack_last_elem = StackPop (&test_stack);
+    printf ("last elem = " EL_FORMAT "\n", stack_last_elem);
+    stack_last_elem = StackPop (&test_stack);
+    printf ("last elem = " EL_FORMAT "\n", stack_last_elem);
+    stack_last_elem = StackPop (&test_stack);
+    printf ("last elem = " EL_FORMAT "\n", stack_last_elem);
     StackDtor (&test_stack);
 
+    return 0;
 }
 

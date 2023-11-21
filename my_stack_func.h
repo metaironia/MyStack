@@ -47,6 +47,23 @@
     #define ON_DEBUG(...)
 #endif
 
+/// Type definition of element of data in stack.
+typedef double Elem_t;
+
+/// 1 if stack element type is floating point number, 0 if not,
+#define IS_STACK_ELEM_FLOAT 1
+
+/// Defines how to check if stack element is poison number.
+#if IS_STACK_ELEM_FLOAT
+
+    const Elem_t POISON_NUM = NAN;                      ///< Poison number if stack element type is floating point.
+    #define IS_STACK_ELEM_POISON(x)  isnan ((float) x)  ///< Method to check if stack element is poison.
+#else
+
+    const Elem_t POISON_NUM = 0xDEAD;                   ///< Poison number if stack element type is integer.
+    #define IS_STACK_ELEM_POISON(x)  x == POISON_NUM    ///< Method to check if stack element is poison.
+#endif
+
 /// Constant for canaries in stack.
 const unsigned long long STACK_CANARY = 0xFEE1DEAD;
 
@@ -63,9 +80,6 @@ const int HOW_MUCH_STACK_DECREASES = 4;
 
 /// How many times stack size should be lower than stack capacity to decrease the stack capacity.
 const int DECREASE_AMOUNT = 2;
-
-/// Poison number to data elements in stack.
-const Elem_t POISON_NUM = 0xDEAD;
 
 /// Struct that contains all info about stack.
 struct Stack {
@@ -159,10 +173,9 @@ enum StackFuncStatus StackPush (Stack *stk, Elem_t value);
 /**
     Function that pops the element from data.
     @param [in, out] stk stack.
-    @param [in, out] ret_value pointer to element that has to be popped.
-    @return \p OK if was done successfully, \p FAIL if error happened.
+    @return popped value from stack.
 */
-enum StackFuncStatus StackPop (Stack *stk, Elem_t *ret_value);
+Elem_t StackPop (Stack *stk);
 
 /**
     Function that changes stack capacity depending on stack size.

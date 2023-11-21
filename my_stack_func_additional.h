@@ -11,13 +11,10 @@
 #define DEBUG 1
 
 /// Printing format of element of data in stack.
-#define EL_FORMAT "%d"
+#define EL_FORMAT "%lf"
 
 /// Printing format of canaries in stack.
 #define CAN_FORMAT "%I64X"
-
-/// Type definition of element of data in stack.
-typedef int Elem_t;
 
 /// Type definition of canaries in stack.
 typedef unsigned long long Canary_t;

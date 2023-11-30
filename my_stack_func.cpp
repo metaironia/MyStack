@@ -52,7 +52,7 @@ enum StackFuncStatus StackDataCtor (Stack *stk) {
     CANARY_ON (if (stack_size_bytes %  MAX_CANARY_SIZE_BYTES != 0)
                    stack_size_bytes += MAX_CANARY_SIZE_BYTES - (stack_size_bytes % MAX_CANARY_SIZE_BYTES));
 
-    (stk -> data) = (Elem_t *) calloc ((size_t) stack_size_bytes, 1);
+    (stk -> data) = (Elem_t *) calloc (1, (size_t) stack_size_bytes);
 
     CANARY_ON (*(Canary_t *) (stk -> data) = STACK_CANARY);
     CANARY_ON (*(Canary_t *) ((char *) (stk -> data) + stack_size_bytes - MAX_CANARY_SIZE_BYTES) =
@@ -77,8 +77,6 @@ enum StackFuncStatus StackDtor (Stack *stk) {
 
     if (StackDataDtor (stk) != StackFuncStatus::OK)
         return FAIL;
-
-    free (stk);
 
     LOG_PRINT (STACK_LOG_FILE, "\n"
                                "Stack successfully destructed. \n");
@@ -106,11 +104,12 @@ enum StackFuncStatus StackDataDtor (Stack *stk) {
 
     StackDataReset (stk);
 
-    free ((char *)(stk -> data) CANARY_ON (- MAX_CANARY_SIZE_BYTES));
+    char *ptr_to_stack_data = (char *)(stk -> data) CANARY_ON (- MAX_CANARY_SIZE_BYTES);
 
-    (stk -> data) = NULL;
+    free (ptr_to_stack_data);
+    ptr_to_stack_data = NULL;
 
-    if (stk -> data)
+    if (ptr_to_stack_data)
         return FAIL;
 
     LOG_PRINT (STACK_LOG_FILE, "\n" "Stack data successfully destructed.\n");
@@ -180,7 +179,7 @@ enum StackFuncStatus StackRecalloc (Stack *stk) {
         memcpy ((stk -> data), previous_data,                             //TODO recalloc
                 (size_t) (sizeof (Elem_t) * ((stk -> stack_size))));
 
-        free (previous_data);
+        free (((char *) previous_data) CANARY_ON (- MAX_CANARY_SIZE_BYTES));
 
         HASH_ON (StackDataHashGen (stk));
         HASH_ON (StackHashGen (stk));
@@ -225,7 +224,8 @@ unsigned int StackOk (Stack *stk) {
         (stk -> stack_hash) = 0;
 
         if (temp_stack_hash          != MurmurHash3_32 (stk, sizeof (stk), 1) ||
-            (stk -> stack_data_hash) != MurmurHash3_32 ((stk -> data), sizeof (Elem_t) * (stk -> capacity), 1))
+            (stk -> stack_data_hash) != MurmurHash3_32 ((stk -> data),
+                                                        sizeof (Elem_t) * (uint32_t) (stk -> capacity), 1))
 
             errors_in_stack |= StackErrors::WRONG_HASH;
 
@@ -310,7 +310,8 @@ enum StackFuncStatus StackHashGen (Stack *stk_for_hash) {
 enum StackFuncStatus StackDataHashGen (Stack *stk_for_hash) {
 
     (stk_for_hash -> stack_data_hash) = MurmurHash3_32 ((stk_for_hash -> data),
-                                                        sizeof (Elem_t) * (stk_for_hash -> capacity), 1);
+                                                        sizeof (Elem_t) *
+                                                                   (uint32_t) (stk_for_hash -> capacity), 1);
 
     return OK;
 }

@@ -1,6 +1,10 @@
 #ifndef MY_STACK_FUNC_H
 #define MY_STACK_FUNC_H
 
+#include <stdio.h>
+#include <stdint.h>
+#include <math.h>
+
 #include "extern_for_stack.h"
 #include "my_stack_func_additional.h"
 #include "hash_func.h"
@@ -48,10 +52,10 @@
 #endif
 
 /// Type definition of element of data in stack.
-typedef double Elem_t;
+typedef int Elem_t;
 
 /// 1 if stack element type is floating point number, 0 if not,
-#define IS_STACK_ELEM_FLOAT 1
+#define IS_STACK_ELEM_FLOAT  0
 
 /// Defines how to check if stack element is poison number.
 #if IS_STACK_ELEM_FLOAT
@@ -61,13 +65,13 @@ typedef double Elem_t;
 #else
 
     const Elem_t POISON_NUM = 0xDEAD;                   ///< Poison number if stack element type is integer.
-    #define IS_STACK_ELEM_POISON(x)  x == POISON_NUM    ///< Method to check if stack element is poison.
+    #define IS_STACK_ELEM_POISON(x)  (x == POISON_NUM)  ///< Method to check if stack element is poison.
 #endif
 
 /// Constant for canaries in stack.
 const unsigned long long STACK_CANARY = 0xFEE1DEAD;
 
-//const unsigned long long DEFAULT_STACK_CAPACITY = 1;
+const unsigned long long DEFAULT_STACK_CAPACITY = 1;
 
 /// Max possible canary size in bytes.
 const int MAX_CANARY_SIZE_BYTES = 8;
